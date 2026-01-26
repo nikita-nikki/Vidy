@@ -253,4 +253,3 @@ chai-backend/
 
 ---
 
-**Note**: This project is part of a comprehensive backend development series. Make sure to follow along with the video tutorials for a complete understanding of the implementation.
