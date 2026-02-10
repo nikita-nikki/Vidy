@@ -1,14 +1,14 @@
 import mongoose from "mongoose"
-import {Comment} from "../models/comment.model.js"
-import {ApiError} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
+import { Comment } from "../models/comment.model.js"
+import { ApiError } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
     //TODO: get all comments for a video
-    const {videoId} = req.params
-    const {page = 1, limit = 10} = req.query
-    
+    const { videoId } = req.params
+    const { page = 1, limit = 10 } = req.query
+
     //ndifferent method 
     if (!videoId) {
         throw new ApiError(404, "VideoId not found!");
@@ -29,11 +29,24 @@ const getVideoComments = asyncHandler(async (req, res) => {
                 from: "users",
                 localField: "owner",
                 foreignField: "_id",
-                as: "commentOwner"
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
             }
         },
         {
-            $unwind: "$commentOwner"
+            $unwind: "$owner"
+        },
+        {
+            $sort: { createdAt: -1 }
         },
         {
             $skip: (parseInt(page) - 1) * parseInt(limit),
@@ -44,16 +57,15 @@ const getVideoComments = asyncHandler(async (req, res) => {
         {
             $project: {
                 content: 1,
-                "videoOwner.username": 1,
-                "videoOwner.fullname": 1,
-                "videoOwner.avatar": 1
+                owner: 1,
+                createdAt: 1
             }
         }
     ]);
 
     return res
-      .status(200)
-      .json(new ApiResponse(200,comments,"Comments of the video."))
+        .status(200)
+        .json(new ApiResponse(200, comments, "Comments of the video."))
 
 })
 
@@ -61,18 +73,18 @@ const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
 
     const user = req.user; //current user
-    if(!user){
-        throw new ApiError(400,"You must be logged in!")
+    if (!user) {
+        throw new ApiError(400, "You must be logged in!")
     }
 
-    const {videoId} = req.params
-    if(!videoId){
-        throw new ApiError(400,"Video id is required.")
+    const { videoId } = req.params
+    if (!videoId) {
+        throw new ApiError(400, "Video id is required.")
     }
 
-    const {content} = req.body
-    if(content.trim() ===""){
-        throw new ApiError(400,"Comment content is required")
+    const { content } = req.body
+    if (content.trim() === "") {
+        throw new ApiError(400, "Comment content is required")
     }
 
     const comment = await Comment.create({
@@ -83,25 +95,25 @@ const addComment = asyncHandler(async (req, res) => {
 
     const addedComment = await Comment.findById(comment._id)
 
-    if(!addedComment){
-        throw new ApiError(500,"Something went wrong while adding new comment")
+    if (!addedComment) {
+        throw new ApiError(500, "Something went wrong while adding new comment")
     }
 
     return res
         .status(201)
-        .json(new ApiResponse(201,addedComment,"Commented successfully"))
+        .json(new ApiResponse(201, addedComment, "Commented successfully"))
 
 })
 
 const updateComment = asyncHandler(async (req, res) => {
     // TODO: update a comment
     const user = req.user
-    if(!user){
-        throw new ApiError(400,"You must be logged in.")
+    if (!user) {
+        throw new ApiError(400, "You must be logged in.")
     }
 
-    const {commentId} = req.params
-    const {content} = req.body
+    const { commentId } = req.params
+    const { content } = req.body
 
     //console.log(commentID);
 
@@ -113,55 +125,175 @@ const updateComment = asyncHandler(async (req, res) => {
     }
 
 
-    if(!content || content.trim() ===""){
-        throw new ApiError(400,"Comment content is required.")
+    if (!content || content.trim() === "") {
+        throw new ApiError(400, "Comment content is required.")
     }
 
-    
-    
+
+
     const comment = await Comment.findById(commentId);
 
-    if(!comment){
-        throw new ApiError(404,"comment not found.")
+    if (!comment) {
+        throw new ApiError(404, "comment not found.")
     }
     //ownership checking
-    if(!comment.owner.equals(user._id)){
-        throw new ApiError(403,"Unauthorized request.")
+    if (!comment.owner.equals(user._id)) {
+        throw new ApiError(403, "Unauthorized request.")
     }
 
     comment.content = content;
     await comment.save();
 
     return res
-       .status(200)
-       .json(new ApiResponse(200,comment,"Comment is updated successfully!"))
+        .status(200)
+        .json(new ApiResponse(200, comment, "Comment is updated successfully!"))
 })
 
 const deleteComment = asyncHandler(async (req, res) => {
     // TODO: delete a comment
     const user = req.user
 
-    const {commentId} = req.params
+    const { commentId } = req.params
 
     const comment = await Comment.findById(commentId)
 
-    if(!comment){
-        throw new ApiError(404,"Comment not found")
+    if (!comment) {
+        throw new ApiError(404, "Comment not found")
     }
     //ownership checking
-    if(!comment.owner.equals(user._id)){
-        throw new ApiError(403,"Unauthorized request.")
+    if (!comment.owner.equals(user._id)) {
+        throw new ApiError(403, "Unauthorized request.")
     }
     await comment.deleteOne()
 
     return res
-       .status(200)
-       .json(200,null,"Deleted comment successfully.")
+        .status(200)
+        .json(200, null, "Deleted comment successfully.")
+})
+
+// Tweet Comments
+const getTweetComments = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params
+
+    if (!tweetId) {
+        throw new ApiError(404, "TweetId not found!");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(tweetId)) {
+        throw new ApiError(401, "TweetId is not valid");
+    }
+
+    const comments = await Comment.aggregate([
+        {
+            $match: {
+                tweet: new mongoose.Types.ObjectId(tweetId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$owner"
+        },
+        {
+            $sort: { createdAt: -1 }
+        },
+        {
+            $project: {
+                content: 1,
+                owner: 1,
+                createdAt: 1
+            }
+        }
+    ]);
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, comments, "Tweet comments fetched."))
+})
+
+const addTweetComment = asyncHandler(async (req, res) => {
+    const user = req.user;
+    if (!user) {
+        throw new ApiError(400, "You must be logged in!")
+    }
+
+    const { tweetId } = req.params
+    if (!tweetId) {
+        throw new ApiError(400, "Tweet id is required.")
+    }
+
+    const { content } = req.body
+    if (!content || content.trim() === "") {
+        throw new ApiError(400, "Comment content is required")
+    }
+
+    const comment = await Comment.create({
+        content,
+        tweet: tweetId,
+        owner: user._id
+    })
+
+    // Populate owner info
+    const populatedComment = await Comment.aggregate([
+        {
+            $match: { _id: comment._id }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind: "$owner"
+        },
+        {
+            $project: {
+                content: 1,
+                owner: 1,
+                createdAt: 1
+            }
+        }
+    ]);
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, populatedComment[0], "Comment added successfully"))
 })
 
 export {
-    getVideoComments, 
-    addComment, 
+    getVideoComments,
+    addComment,
     updateComment,
-    deleteComment
-    }
+    deleteComment,
+    getTweetComments,
+    addTweetComment
+}
