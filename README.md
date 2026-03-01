@@ -6,11 +6,11 @@ A full-stack YouTube-like video hosting platform built with modern web technolog
 
 - **Frontend Application**: [https://vidy-six.vercel.app/](https://vidy-six.vercel.app/)
 - **Backend API**: [https://vidy.onrender.com](https://vidy.onrender.com)
-- **📚 API Documentation**: [View Complete API Reference Below](#api-documentation)
+- ** API Documentation**: [View Complete API Reference Below](#api-documentation)
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -673,7 +673,7 @@ Get all videos for the current user's channel.
 
 ---
 
-## 🚀 Setup
+##  Setup
 
 ### Prerequisites
 
@@ -711,7 +711,7 @@ npm install
 
 ---
 
-### ⚙️ Environment Configuration
+###  Environment Configuration
 
 #### Backend Environment Variables
 
