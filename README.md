@@ -131,30 +131,30 @@ A full-stack YouTube-like video hosting platform built with modern web technolog
     │   DATA LAYER    │     │  EXTERNAL APIS  │
     │                 │     │                 │
     │   MongoDB       │     │   Cloudinary    │
-    │   • Users       │     │   • Videos      │
-    │   • Videos      │     │   • Images      │
-    │   • Comments    │     │   • Thumbnails  │
-    │   • Likes       │     │                 │
-    │   • Subscriptions│    │                 │
-    │   • Playlists   │     │                 │
-    │   • Tweets      │     │                 │
+    │  • Users        │     │   • Videos      │
+    │  • Videos       │     │   • Images      │
+    │  • Comments     │     │   • Thumbnails  │
+    │  • Likes        │     │                 │
+    │  • Subscriptions│     │                 │
+    │  • Playlists    │     │                 │
+    │  • Tweets       │     │                 │
     └─────────────────┘     └─────────────────┘
 ```
 
 ### Database Schema Relationships
 
 ```
-    ┌──────────┐              ┌──────────┐              ┌──────────┐
-    │   USER   │─────────────▶│  VIDEO   │◀─────────────│ COMMENT  │
-    └──────────┘              └──────────┘              └──────────┘
+    ┌──────────┐               ┌──────────┐              ┌──────────┐
+    │   USER   │─────────────▶ │  VIDEO  │◀─────────────│ COMMENT  │
+    └──────────┘               └──────────┘              └──────────┘
          │                         │                          │
          │                         │                          │
          ├─────────────────────────┼──────────────────────────┤
          │                         │                          │
          ▼                         ▼                          ▼
-    ┌──────────┐              ┌──────────┐              ┌──────────┐
-    │SUBSCRIPTION│            │ PLAYLIST │              │   LIKE   │
-    └──────────┘              └──────────┘              └──────────┘
+    ┌──────────  ┐              ┌──────────┐              ┌──────────┐
+    │SUBSCRIPTION│              │ PLAYLIST │              │   LIKE   │
+    └──────────  ┘              └──────────┘              └──────────┘
          │                         │
          │                         │
          ▼                         ▼
